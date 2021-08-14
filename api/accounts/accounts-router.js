@@ -4,12 +4,20 @@ const accModel = require("./accounts-model");
 
 router.get('/', async(req, res, next) => {
   // DO YOUR MAGIC
-  const accounts = await accModel.getAll();
-  res.status(200).json(accounts);
+  try{
+    const accounts = await accModel.getAll();
+    res.status(200).json(accounts);
+  }
+  catch(err){
+    // console.log("why no message?")
+    // next(new Error("catch for no reason"))
+    next(err);
+  }
 })
 
 router.get('/:id',checkAccountId, (req, res, next) => {
   // DO YOUR MAGIC
+  console.log("get id")
   try{
     res.status(200).json(req.account);
   }
@@ -22,12 +30,12 @@ router.post('/',checkAccountPayload,checkAccountNameUnique, async(req, res, next
   // DO YOUR MAGIC
   try{
     const {name,budget} = req.body;
-    const newAccount = await accModel.create({name,budget});
-    if(newAccount){
-      res.status(201).json(newAccount);
+    const ids = await accModel.create({name,budget});
+    if(ids.length !== 0){
+      res.status(201).json({name,budget});
     }
     else{
-      next({message:"unable to create"});
+      next(new Error("unable to create"));
     }
   }
   catch(err){
@@ -35,16 +43,16 @@ router.post('/',checkAccountPayload,checkAccountNameUnique, async(req, res, next
   }
 })
 
-router.put('/:id',checkAccountId,checkAccountPayload, (req, res, next) => {
+router.put('/:id',checkAccountId,checkAccountPayload, async(req, res, next) => {
   // DO YOUR MAGIC
   try{
     const {name,budget} = req.body;
     const counts = await accModel.updateById(req.params.id,{name,budget});
     if(counts !== 0){
-      res.status(200).json({id,name,budget});
+      res.status(200).json({id:req.body.id,name,budget});
     }
     else{
-      next({message:"cannot update account"});
+      next(new Error("cannot update account"));
     }
   }
   catch(err){
@@ -52,7 +60,7 @@ router.put('/:id',checkAccountId,checkAccountPayload, (req, res, next) => {
   }
 });
 
-router.delete('/:id',checkAccountId, (req, res, next) => {
+router.delete('/:id',checkAccountId, async(req, res, next) => {
   // DO YOUR MAGIC
   try{
     const counts = await accModel.deleteById(req.params.id);
@@ -60,7 +68,7 @@ router.delete('/:id',checkAccountId, (req, res, next) => {
       res.status(200).json({"records deleted":counts});
     }
     else{
-      next({message:"cannot delete record"});
+      next(new Error("cannot delete record"));
     }
   }
   catch(err){
@@ -70,7 +78,7 @@ router.delete('/:id',checkAccountId, (req, res, next) => {
 
 router.use((err, req, res, next) => { // eslint-disable-line
   // DO YOUR MAGIC
-  res.status(500).json(err);
+  res.status(500).json({message:err.toString()});
 })
 
 module.exports = router;
